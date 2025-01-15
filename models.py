@@ -48,7 +48,6 @@ def create_peft_model(model, args):
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
-            use_rslora=args.rslora,
             target_modules=["query", "value", "attention.output.dense", "output.dense"],
         )
 
@@ -59,7 +58,6 @@ def create_peft_model(model, args):
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
-            use_rslora=args.rslora,
             target_modules=["q", "v", "k", "o", "wi", "wo"],
         )
 

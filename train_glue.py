@@ -61,12 +61,6 @@ np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 torch.cuda.manual_seed_all(args.seed)
 
-if args.method == "ours":
-    args.no_xs = False
-    args.eg = True
-    args.use_eff_lr = True
-    args.lora_alpha = args.lora_r
-
 
 def finetune(task):
 
