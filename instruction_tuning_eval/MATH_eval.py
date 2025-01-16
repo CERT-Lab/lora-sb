@@ -136,12 +136,12 @@ def parse_args():
                 wandb_run_id = f.read().strip()
             wandb.init(
             id=wandb_run_id,
-            project="lora-xs-pro-new",
+            project="project-name",
             resume="must"
         )
         except FileNotFoundError:
             print("WandB run ID file not found, starting new run")
-            wandb.init(project="lora-xs-pro-new")
+            wandb.init(project="project-name")
             
     return args 
 
