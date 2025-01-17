@@ -67,7 +67,7 @@ for dataset in "${datasets[@]}"; do
     # Convert dataset name to lowercase for file path if needed
     dataset_lower=$(echo "$dataset" | tr '[:upper:]' '[:lower:]')
     
-    CUDA_VISIBLE_DEVICES=$GPU_ID python instruction_tuning_eval/commonsense_eval_2.py \
+    CUDA_VISIBLE_DEVICES=$GPU_ID python instruction_tuning_eval/commonsense_eval.py \
         --model "$MERGED_MODEL_PATH" \
         --dataset "$dataset" \
         --data_file "data/commonsense/$dataset_lower/test.json" \
