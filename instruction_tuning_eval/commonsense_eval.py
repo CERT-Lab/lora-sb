@@ -1,13 +1,13 @@
 import argparse
 import json
 import re
+from vllm import LLM, SamplingParams
 import sys
 import torch
 import gc
 import wandb
 from tqdm.auto import tqdm
 import os
-from transformers import AutoModelForCausalLM, AutoTokenizer
 MAX_INT = sys.maxsize
 
 
@@ -33,8 +33,17 @@ def extract_answer(dataset: str, sentence: str) -> str:
 
 def batch_data(data_list, batch_size=1):
     """Split data into batches."""
-    n = len(data_list)
-    return [data_list[i:i + batch_size] for i in range(0, n, batch_size)]
+    n = len(data_list) // batch_size
+    batch_data = []
+    for i in range(n-1):
+        start = i * batch_size
+        end = (i+1)*batch_size
+        batch_data.append(data_list[start:end])
+
+    last_start = (n-1) * batch_size
+    last_end = MAX_INT
+    batch_data.append(data_list[last_start:last_end])
+    return batch_data
 
 
 def generate_prompt(instruction, input=None):
@@ -60,41 +69,11 @@ def generate_prompt(instruction, input=None):
 """
 
 
-def generate_response(model, tokenizer, prompt, device):
-    """Generate response using transformers pipeline."""
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).to(device)
-    
-    with torch.inference_mode():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=32,
-            temperature=0.1,
-            top_p=0.75,
-            top_k=40,
-            pad_token_id=tokenizer.eos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-        )
-    
-    response = tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
-    return response.strip()
-
-
-def commonsense_test(model_path, dataset_name, data_path, start=0, end=MAX_INT, batch_size=1):
+def commonsense_test(model, dataset_name, data_path, start=0, end=MAX_INT, batch_size=1, tensor_parallel_size=1):
     """Main evaluation function for commonsense tasks."""
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
     gc.collect()
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    
-    # Load model and tokenizer
-    print("\nLoading model and tokenizer...")
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
 
     # Load dataset
     with open(data_path, 'r') as f:
@@ -107,28 +86,42 @@ def commonsense_test(model_path, dataset_name, data_path, start=0, end=MAX_INT, 
     # Batch the instructions
     batch_instructions = batch_data(instructions, batch_size=batch_size)
 
+    # Setup VLLM
+    stop_tokens = ["Instruction:", "Instruction", "Response:", "Response"]
+    sampling_params = SamplingParams(temperature=0.1, top_p=0.75, top_k=40, max_tokens=32, stop=stop_tokens)
+    llm = LLM(model=model, tensor_parallel_size=tensor_parallel_size)
+    
     res_completions = []
     result = []
     invalid_outputs = []
 
     # Generate responses
     print("\nGenerating responses...")
-    for prompts in tqdm(batch_instructions, desc="Generating responses", ncols=100):
+    for idx, prompts in enumerate(
+        tqdm(batch_instructions, 
+            total=len(batch_instructions), 
+            desc="Generating responses",
+            ncols=100)
+    ):
         if not isinstance(prompts, list):
             prompts = [prompts]
             
-        for prompt in prompts:
-            formatted_prompt = generate_prompt(prompt)
-            completion = generate_response(model, tokenizer, formatted_prompt, device)
-            res_completions.append(completion)
+        formatted_prompts = [generate_prompt(instruction) for instruction in prompts]
+        completions = llm.generate(formatted_prompts, sampling_params)
+        
+        for output in completions:
+            generated_text = output.outputs[0].text
+            res_completions.append(generated_text)
 
     # Evaluate responses
     print("\nEvaluating responses...")
-    for instruction, completion, answer in tqdm(
-        zip(instructions, res_completions, answers),
-        total=len(instructions),
-        desc="Evaluating answers",
-        ncols=100
+    for idx, (instruction, completion, answer) in enumerate(
+        tqdm(
+            zip(instructions, res_completions, answers),
+            total=len(instructions),
+            desc="Evaluating answers",
+            ncols=100
+        )
     ):
         pred = extract_answer(dataset_name, completion)
         is_correct = (pred == answer)
@@ -167,6 +160,8 @@ def parse_args():
                       help="End index for evaluation")
     parser.add_argument("--batch_size", type=int, default=32,
                       help="Batch size for evaluation")
+    parser.add_argument("--tensor_parallel_size", type=int, default=1,
+                      help="Tensor parallel size for model")
     parser.add_argument("--run_dir", type=str,
                       help="Directory containing the wandb run ID")
 
@@ -183,12 +178,12 @@ def parse_args():
                 wandb_run_id = f.read().strip()
             wandb.init(
                 id=wandb_run_id,
-                project="project-name",
+                project="lora-sb-cr",
                 resume="must"
             )
         except FileNotFoundError:
             print("WandB run ID file not found, starting new run")
-            wandb.init(project="project-name")
+            wandb.init(project="lora-xs-pro-new")
 
     return args
 
@@ -196,10 +191,11 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     commonsense_test(
-        model_path=args.model,
+        model=args.model,
         dataset_name=args.dataset,
         data_path=args.data_file,
         start=args.start,
         end=args.end,
         batch_size=args.batch_size,
+        tensor_parallel_size=args.tensor_parallel_size
     )
