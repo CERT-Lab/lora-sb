@@ -64,13 +64,11 @@ declare -a datasets=(
 for dataset in "${datasets[@]}"; do
     echo "=== Evaluating on $dataset ==="
     
-    # Convert dataset name to lowercase for file path if needed
-    dataset_lower=$(echo "$dataset" | tr '[:upper:]' '[:lower:]')
     
     CUDA_VISIBLE_DEVICES=$GPU_ID python instruction_tuning_eval/commonsense_eval.py \
         --model "$MERGED_MODEL_PATH" \
         --dataset "$dataset" \
-        --data_file "data/commonsense/$dataset_lower/test.json" \
+        --data_file "data/commonsense/test.json" \
         --batch_size 64 \
         --tensor_parallel_size 1 \
         --run_dir "$RUN_DIR"
