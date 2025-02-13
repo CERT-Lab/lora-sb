@@ -124,12 +124,10 @@ This script fine-tunes a RoBERTa-large model on the GLUE benchmark datasets. You
 If you use our work, please cite our paper:
 
 ```
-@misc{ponkshe2024initializationusingupdateapproximation,
-      title={Initialization using Update Approximation is a Silver Bullet for Extremely Efficient Low-Rank Fine-Tuning}, 
-      author={Kaustubh Ponkshe and Raghav Singhal and Eduard Gorbunov and Alexey Tumanov and Samuel Horvath and Praneeth Vepakomma},
-      year={2024},
-      eprint={2411.19557},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2411.19557}, 
+@article{ponkshe2024initialization,
+  title={Initialization using update approximation is a silver bullet for extremely efficient low-rank fine-tuning},
+  author={Ponkshe, Kaustubh and Singhal, Raghav and Gorbunov, Eduard and Tumanov, Alexey and Horvath, Samuel and Vepakomma, Praneeth},
+  journal={arXiv preprint arXiv:2411.19557},
+  year={2024}
 }
+```
