@@ -37,14 +37,7 @@ if [ ! -d "$FINAL_MODEL_PATH" ]; then
     exit 1
 fi
 
-# Choose merge script based on method
-if [ "$METHOD" = "ours" ] || [ "$METHOD" = "xs" ]; then
-    echo "Using merge_adapter_to_base_model for method: $METHOD"
-    MERGE_SCRIPT="utils.merge_adapter_to_base_model"
-else
-    echo "Using merge_adapter_to_base_model_normal for method: $METHOD"
-    MERGE_SCRIPT="utils.merge_adapter_to_base_model_normal"
-fi
+MERGE_SCRIPT="utils.merge_adapter_to_base_model"
 
 CUDA_VISIBLE_DEVICES=$GPU_ID python -m $MERGE_SCRIPT \
     --base_model $BASE_MODEL \
