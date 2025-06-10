@@ -130,4 +130,11 @@ If you use our work, please cite our paper:
   journal={arXiv preprint arXiv:2411.19557},
   year={2024}
 }
+
+@article{singhal2025abba,
+  title={ABBA: Highly Expressive Hadamard Product Adaptation for Large Language Models},
+  author={Singhal, Raghav and Ponkshe, Kaustubh and Vartak, Rohit and Vepakomma, Praneeth},
+  journal={arXiv preprint arXiv:2505.14238},
+  year={2025}
+}
 ```
