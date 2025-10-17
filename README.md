@@ -121,7 +121,7 @@ This script fine-tunes a RoBERTa-large model on the GLUE benchmark datasets. You
 
 ## Citation
 
-If you use our work, please cite us
+If you use our work, please cite us:
 
 ```
 @article{ponkshe2024initialization,
